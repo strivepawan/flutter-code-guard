@@ -1,0 +1,156 @@
+# CI/CD Integration Examples for Flutter Code Guard
+
+# GitHub Actions Example
+name: Flutter Code Quality Check
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.0'
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Install Flutter Code Guard
+      run: dart pub global activate flutter_code_guard
+      
+    - name: Run Flutter Code Guard Analysis
+      run: flutter_code_guard
+      
+    - name: Run Tests
+      run: flutter test
+      
+    - name: Build APK
+      run: flutter build apk --debug
+
+---
+
+# GitLab CI Example
+stages:
+  - analyze
+  - test
+  - build
+
+variables:
+  FLUTTER_VERSION: "3.16.0"
+
+before_script:
+  - apt-get update -qq && apt-get install -y -qq git curl unzip
+  - git clone https://github.com/flutter/flutter.git -b stable --depth 1
+  - export PATH="$PATH:`pwd`/flutter/bin"
+  - flutter doctor
+
+code_analysis:
+  stage: analyze
+  script:
+    - flutter pub get
+    - dart pub global activate flutter_code_guard
+    - flutter_code_guard
+  only:
+    - merge_requests
+    - main
+    - develop
+
+unit_tests:
+  stage: test
+  script:
+    - flutter pub get
+    - flutter test --coverage
+  coverage: '/lines......: \d+\.\d+\%/'
+
+build_apk:
+  stage: build
+  script:
+    - flutter pub get
+    - flutter build apk --release
+  artifacts:
+    paths:
+      - build/app/outputs/flutter-apk/app-release.apk
+    expire_in: 1 week
+  only:
+    - main
+
+---
+
+# Azure Pipelines Example
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  FLUTTER_VERSION: '3.16.0'
+
+steps:
+- task: FlutterInstall@0
+  displayName: 'Install Flutter'
+  inputs:
+    version: '$(FLUTTER_VERSION)'
+
+- script: |
+    flutter pub get
+    dart pub global activate flutter_code_guard
+  displayName: 'Install dependencies and Flutter Code Guard'
+
+- script: |
+    flutter_code_guard
+  displayName: 'Run code analysis'
+
+- script: |
+    flutter test
+  displayName: 'Run tests'
+
+- script: |
+    flutter build apk --release
+  displayName: 'Build APK'
+  condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+
+---
+
+# Pre-commit Hook Example
+# Save as .git/hooks/pre-commit and make executable (chmod +x .git/hooks/pre-commit)
+
+#!/bin/sh
+echo "Running Flutter Code Guard analysis..."
+
+# Run Flutter Code Guard
+flutter_code_guard
+
+# Check if the analysis passed
+if [ $? -ne 0 ]; then
+    echo "❌ Flutter Code Guard analysis failed!"
+    echo "Please fix the issues before committing."
+    exit 1
+fi
+
+echo "✅ Flutter Code Guard analysis passed!"
+
+# Run tests
+echo "Running tests..."
+flutter test
+
+if [ $? -ne 0 ]; then
+    echo "❌ Tests failed!"
+    echo "Please fix the failing tests before committing."
+    exit 1
+fi
+
+echo "✅ All checks passed! Proceeding with commit."
+exit 0

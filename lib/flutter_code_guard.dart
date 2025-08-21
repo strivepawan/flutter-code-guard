@@ -58,8 +58,7 @@ Future<void> watchAndAnalyze() async {
   await runAnalyzer(); // first run
 
   dir.watch(recursive: true).listen((event) {
-    if (event.type == FileSystemEvent.modify &&
-        event.path.endsWith('.dart')) {
+    if (event.type == FileSystemEvent.modify && event.path.endsWith('.dart')) {
       print("\n💾 File changed: ${event.path}");
       runAnalyzer();
     }
