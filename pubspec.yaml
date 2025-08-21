@@ -1,0 +1,20 @@
+name: flutter_code_guard
+description: A real-time code review and linting tool for Flutter/Dart projects.
+version: 0.0.1
+homepage: https://github.com/strivepawan/flutter-code-guard.git
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  args: ^2.4.2
+  yaml: ^3.1.2
+
+dev_dependencies:
+  lints: ^3.0.0
+  test: ^1.25.0
+
+executables:
+  flutter_code_guard:
+
+
